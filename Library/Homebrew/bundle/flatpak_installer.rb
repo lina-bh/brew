@@ -38,10 +38,12 @@ module Homebrew
           force:      T::Boolean,
           remote:     String,
           url:        T.nilable(String),
+          overrides:  T::Hash[String, String],
           _options:   T.anything,
         ).returns(T::Boolean)
       }
-      def self.install!(name, preinstall: true, verbose: false, force: false, remote: "flathub", url: nil, **_options)
+      def self.install!(name, preinstall: true, verbose: false, force: false, remote: "flathub", url: nil,
+                        overrides: {}, **_options)
         return true unless Bundle.flatpak_installed?
         return true unless preinstall
 
@@ -81,6 +83,13 @@ module Homebrew
                                           verbose: verbose
 
         installed_packages << { name:, remote: actual_remote }
+
+        if !overrides.empty? && !Bundle.system(flatpak, "override", "--user", *overrides.map do |type, value|
+ "--#{type}=#{value}"
+        end, name)
+          return false
+        end
+
         true
       end
 
